@@ -31,51 +31,6 @@ def from_device(arr):
         return arr.get()
     return arr
 
-def _hitcount_embedding_open_set(
-    i: int,
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    top_k: tuple[int] = None,
-) -> dict[int, int]:
-    y1 = y_true[i]
-    
-    diff = [j for j in range(y_true.shape[0]) if i != j and not np.array_equal(y1, y_true[j])]
-    same = [j for j in range(y_true.shape[0]) if i != j and np.array_equal(y1, y_true[j])]
-
-    if len(diff) > 0 and len(same) > 0:
-        if use_gpu:
-            y_pred_gpu = to_device(y_pred)
-            dist_diff = [(cp.linalg.norm(y_pred_gpu[i] - y_pred_gpu[j]).get(), 0) for j in diff]
-            dist_same = [(cp.linalg.norm(y_pred_gpu[i] - y_pred_gpu[j]).get(), 1) for j in same]
-        else:
-            dist_diff = [(np.linalg.norm(y_pred[i] - y_pred[j]), 0) for j in diff]
-            dist_same = [(np.linalg.norm(y_pred[i] - y_pred[j]), 1) for j in same]
-        
-        dist_combined = np.random.permutation(dist_diff + dist_same)
-        hits_sorted = [h for _, h in sorted(dist_combined, key=lambda t: t[0])]
-        return {k: 1 if sum(hits_sorted[:k]) > 0 else 0 for k in top_k}
-    else:
-        return {k: 0 for k in top_k}
-
-def _score_embeddings_parallel(score_func, map_iter, **kwargs) -> dict[str, float]:
-    top_k = kwargs.pop("top_k")
-    y_true = kwargs.pop("y_true")
-    y_pred = kwargs.pop("y_pred")
-
-    y_true_np = to_numpy(y_true)
-    y_pred_np = to_numpy(y_pred)
-
-    total = 0
-    hits = {k: 0 for k in top_k}
-
-    for i in map_iter:
-        res = score_func(i, y_true=y_true_np, y_pred=y_pred_np, top_k=top_k)
-        total += 1
-        for k, x in res.items():
-            hits[k] += x
-
-    return {f"mAP@{k}": (hits[k] / total) for k in top_k}
-
 def _score_embeddings_parallel(score_func, map_iter, **kwargs) -> dict[str, float]:
     top_k = kwargs.pop("top_k")
     y_true = kwargs.pop("y_true", None)  # Optional for functions that need it
