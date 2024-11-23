@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH -A r01272
+#SBATCH -A account
 #SBATCH -p gpu
-#SBATCH -J IV3
-#SBATCH -o /N/u/nothamil/BigRed200/triplet/627/out_%A_%a.txt
-#SBATCH -e /N/u/nothamil/BigRed200/triplet/627/error_%A_%a.txt
+#SBATCH -J name
+#SBATCH -o out_%A_%a.txt
+#SBATCH -e error_%A_%a.txt
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=nothamil@iu.edu
+#SBATCH --mail-user=email@email.com
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=200GB
 #SBATCH --time=20:00:00
-#SBATCH --array=0  # 4*4*6 = 96, so 0-95
+#SBATCH --array=0
 
 module load conda
 conda activate triplet
@@ -26,7 +26,7 @@ retrain_layer=(223) #(706 700 654 566 453 16)
 
 cd /N/u/nothamil/BigRed200/triplet
 TIMESTAMP=$(date +%s)
-DATASET_PATH="/N/u/nothamil/Slate/627/NIH_Single"
+DATASET_PATH="dataset"
 
 # Calculate indices for each parameter based on SLURM_ARRAY_TASK_ID
 id=$SLURM_ARRAY_TASK_ID
